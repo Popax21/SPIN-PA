@@ -45,7 +45,7 @@ public sealed class DTRangesCommand : CLICommand {
                 ctx.Console.WriteLine("-> recursive cycles:");
 
                 StringBuilder sb = new StringBuilder();
-                BigRational cycleIntv = new BigRational(Constants.SpinnerInterval), cycleDelta = new BigRational(range.EffectiveDT);
+                BigRational cycleIntv = new BigRational(Constants.HazardLoadInterval), cycleDelta = new BigRational(range.EffectiveDT);
                 for(int i = 0; i < cycleDepth; i++) {
                     sb.Clear();
                     sb.Append($"    {i}:");

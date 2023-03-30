@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPINPA.Engine", "SPINPA.Engine\SPINPA.Engine.csproj", "{52B6DE1B-D56C-4091-B664-15413076B712}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPINPA.Engine.CLI", "SPINPA.Engine.CLI\SPINPA.Engine.CLI.csproj", "{96A7DD12-AA49-410B-B9C8-34E2A866FEE9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{52B6DE1B-D56C-4091-B664-15413076B712}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52B6DE1B-D56C-4091-B664-15413076B712}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52B6DE1B-D56C-4091-B664-15413076B712}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52B6DE1B-D56C-4091-B664-15413076B712}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96A7DD12-AA49-410B-B9C8-34E2A866FEE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96A7DD12-AA49-410B-B9C8-34E2A866FEE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96A7DD12-AA49-410B-B9C8-34E2A866FEE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96A7DD12-AA49-410B-B9C8-34E2A866FEE9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

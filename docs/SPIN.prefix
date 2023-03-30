@@ -1,0 +1,7 @@
+---
+header-includes:
+ - \usepackage{fvextra}
+ - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+ - \DeclareMathOperator{\sgn}{sgn}
+---
+# Celeste Spinner Analyisis - the SPIN theory

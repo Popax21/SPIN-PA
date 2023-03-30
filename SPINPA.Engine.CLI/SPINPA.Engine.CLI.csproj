@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <RootNamespace>SPINPA.Engine.CLI</RootNamespace>
+        <Nullable>enable</Nullable>
+        <AssemblyName>SPIN-PA</AssemblyName>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\SPINPA.Engine\SPINPA.Engine.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    </ItemGroup>
+</Project>

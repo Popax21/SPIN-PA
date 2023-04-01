@@ -159,7 +159,8 @@ $$
 - $\lvert r' \rvert = \mathit{thr}_R \neq \mathit{thr}_L = o$
 	- This difference does not affect the group indicies $g_R = g_L$, however a further recursive cycle is required to predict the recursive length drift of $L_L$.
 - when $r' > 0$: $\mathit{off} - r' = \mathit{off}_R \neq \mathit{off}_L = \mathit{off}$
-	- In this case, the length drift cycle is one tick behind of the recursive cycle. The regular recursive cycle can still be used to predict the length drift, but one must look at the values from the previous tick instead of the current value. The recursive length drift cycle of $L_L$ must then also be adjusted to use $\mathit{off}_R$ instead of $\mathit{off}_L$, as this cancels out the fact that values are taken from the previous tick.
+	- In this case, the recursive group drift cycle is one tick behind of the length drift cycle. The regular recursive cycle can still be used to predict the length drift, but one must look at the values from the next tick instead of the current value. The recursive length drift cycle of $L_L$ must then also be adjusted to use $\mathit{off}_R$ instead of $\mathit{off}_L$, as this cancels out the fact that values are taken from the next tick.
+	- This also means that length drifts either happen in the same group cycle, or in the group cycle before an actual group drift happens.
 
 
 ## Why this even happens
@@ -169,7 +170,7 @@ Simply put, in practice, the imprecisions of floating point numbers mean that ne
 
 - $0.05$ is not exactly representable as a floating point number - the values used by the game's calculations is actually $0.0500000007450580596923828125$ (this also affects $\mathit{dt}$)
 - `TimeActive` is incremented every frame by $0.0166667$-ish. However, as it only is a 32 bit float, depending on the current magnitude of `TimeActive`, the actual *effective* $\mathit{dt}$ will vary slightly because of float cancellation, and become less and less precise as time goes on. This results in "ranges" of different effective $\mathit{dt}$ values, which will be examined later.
-    - Note that $\mathit{thr}$ is unaffected this effective deltatime imprecision - it will always remain the at the same precision and always equal the closest float value of $0.0166667$
+	- Note that $\mathit{thr}$ is unaffected this effective deltatime imprecision - it will always remain the at the same precision and always equal the closest float value of $0.0166667$
 
 ## The effective deltatime ranges
 `TimeActive` is stored in a 32 bit IEEE754 normalized floating point number. As such, it is comprised of a 23 bit mantissa `m = 1.XXXXXXXXXXXXXXXXXXXXXXX` (in binary), an 8 bit exponent `e = XXXXXXXX` and a sign bit `s`, which will always be zero. The value of such a float is given by $m * 2^{e - 127}$.

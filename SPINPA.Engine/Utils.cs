@@ -38,5 +38,11 @@ public static class FloatUtils {
         Assert.AssertTrue((mant & (1 << (mantOff - 1))) == 0);
         return BuildFloat(sign, exp + mantOff, (mant >> mantOff) & (NormalizedMantissaBit - 1));
     }
+}
 
+public static class CalcUtils {
+    public static int RMod(int v, int m) => ((v % m) + m) % m;
+    public static long RMod(long v, long m) => ((v % m) + m) % m;
+    public static float RMod(float v, float m) => ((v % m) + m) % m;
+    public static BigRational RMod(BigRational v, BigRational m) => ((v % m) + m) % m;
 }

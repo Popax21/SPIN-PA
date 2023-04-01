@@ -51,11 +51,11 @@ public sealed class DTRangesCommand : CLICommand {
                     sb.Append($"    {i}:");
                     if(cycleDeltas) sb.Append($" dt={FormatFloat(cycleDelta, true)}");
                     if(cycleIntervals) sb.Append($" intv={FormatFloat(cycleIntv, false)}");
-                    if(cycleDrifts) sb.Append($" drift={FormatFloat(CycleCalculator.CalcResidualDrift(cycleIntv, cycleDelta), true)}");
-                    if(cycleLens) sb.Append($" len={CycleCalculator.CalcCycleLength(cycleIntv, cycleDelta).ToString().PadLeft(8)}");
+                    if(cycleDrifts) sb.Append($" drift={FormatFloat(RecursiveCycleCalculator.CalcResidualDrift(cycleIntv, cycleDelta), true)}");
+                    if(cycleLens) sb.Append($" len={RecursiveCycleCalculator.CalcCycleLength(cycleIntv, cycleDelta).ToString().PadLeft(8)}");
                     ctx.Console.WriteLine(sb.ToString());
 
-                    CycleCalculator.DescendRecursionLevels(ref cycleIntv, ref cycleDelta, 1);
+                    RecursiveCycleCalculator.DescendRecursionLevels(ref cycleIntv, ref cycleDelta, 1);
                 }
             }
         }

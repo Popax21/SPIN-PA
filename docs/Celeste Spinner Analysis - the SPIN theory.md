@@ -1,3 +1,5 @@
+***Analysis, research and code by Popax21, with help from XMinty7 and others**
+
 *The name "SPIN theory" is derived from the fact that this theory can be visualized as a recursive set of sliding windows "spinning" / looping around in a residual number field*
 
 ## Introduction
@@ -13,14 +15,13 @@ public bool OnInterval(float interval, float offset) {
 This behavior leads to spinners being grouped into so called "spinner groups": the number of spinner groups is determined through the following formula: $$
 n_g = \left \lfloor {\mathit{interval} \over \mathit{dt}} \right \rceil = \left \lfloor \mathit{interval}*{60} \right \rceil
 $$
-Note that the group count can be chosen arbitrarly as either $\left \lfloor {\mathit{interval} \over \mathit{dt}} \right \rfloor$ or $\left \lceil {\mathit{interval} \over \mathit{dt}} \right \rceil$ (except for ${\mathit{interval} \over \mathit{dt}} \in (1;2)$, in which case one has to round upwards), though the bigger $\lvert \mathit{interval} - n_g * \mathit{dt} \rvert = \lvert r \rvert$ is, where $r = \mathit{interval} - n_g * \mathit{dt}$ is called the *residual drift* of the groups, the less the spinners will follow the group pattern consistently over time.
-
 Spinners will check whether they should load on every frame $t = i*n_g + g$ for some integer $i$, where $g \in [0;n_g)$ is called the spinner's *group (index)*. A "group cycle" consists of $n_g$ frames, where every spinner checks if it should load exactly once at some frame offset corresponding to its group number $g$. The following formula can be used to determine a spinner's group from its offset (the later analysis will contain a proof of a more general version of this statement): $$
-g_{\mathit{off}} = \left \lceil {\mathit{off} \over \mathit{dt}} \right \rceil = \left \lceil {\mathit{off} * 60} \right \rceil \mod n_g
+\begin{aligned}
+&g = \left \lceil {\mathit{off}_B \over \mathit{dt}} \right \rceil\mod n_g \\
+&\text{where } \mathit{off}_B = \begin{cases} (\mathit{off} \bmod \mathit{intv}) - \mathit{intv} & \text{if } (\mathit{off} \bmod \mathit{intv}) > \mathit{intv} - \mathit{dt} \\ \mathit{off} \bmod \mathit{intv} & \text{else} \end{cases}
+\end{aligned}
 $$
-*Note: the above equivalence $\left \lceil {\mathit{off} \over \mathit{dt}} \right \rceil = \left \lceil {\mathit{off} * 60} \right \rceil$ assumes that $\mathit{dt}$ is exactly $1 \over 60$-th of a second. The actual $\mathit{dt}$ obersved in game will be differemt vary over time, which will be explored later.
-
- For the scope of this document, frame indices are defined as the number of frames which have ellapsed since the scene (=`Level`) has become active.
+For the scope of this document, frame indices are defined as the number of frames which have ellapsed since the scene (=`Level`) has become active.
 
 As briefly mentioned above, spinners don't strictily adhere to this group pattern, can actually change which group they belong to at certain points in time - the rest of the document will be an analysis of why and when these spinner group changes occur.
 
@@ -49,7 +50,7 @@ $$
 Now, because of spinner groups, we expect this expression to evaluate to the same value for every $t = c*n_g + i$, where $c$ is the index of the group cycle and $i$ is the offset into the cycle. Inserting this value of $t$ into the expression yields: $$
 t*\mathit{dt} - \mathit{off} = (c*n_g + i)*\mathit{dt} - \mathit{off} = c*n_g*\mathit{dt} + i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}
 $$
-Let us now define the *residual drift* $r$ as $r = \mathit{intv} - \lvert \mathit{dt} \rvert * n_g$ just like we did earlier. Inserting this new symbol into our condition we get: $$
+Let us now define the *residual drift* $r$ as $r = \mathit{intv} - \lvert \mathit{dt} \rvert * n_g$, where $\lvert r \rvert \leq {\lvert \mathit{dt} \rvert \over 2}$. Inserting this new symbol into our condition we get: $$
 {}{} \DeclareMathOperator{\sgn}{sgn}
 \begin{aligned}
 c*n_g*\mathit{dt} + i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv} \\
@@ -60,78 +61,116 @@ c*n_g*\mathit{dt} + i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{int
 $$
 Note that the final expression differs from what we would expect if all spinner cycles were exactly equal! Instead of $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$, which would mean that the values of our expression would loop every group cycle (as it is only dependent on the group offset $i$), we got $i*\mathit{dt} - (\mathit{off} + \sgn \mathit{dt} * r*c) < \mathit{thr} \mod \mathit{intv}$. **This means that the effective offset of each spinner shifts by $\sgn \mathit{dt} * r$  every $n_g$ frames!**
 
-## When group changes happen
-A spinner will change its group as soon as $i*\mathit{dt} - (\mathit{off} + \sgn \mathit{dt} * r*c) < \mathit{thr} \mod \mathit{intv}$ no longer evaluates to the same value as $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$. For convience, let $r' = \sgn \mathit{dt} * r$ and $\mathit{off}_c = \mathit{off} + r'*c$, $\mathit{}$. The two expressions from above can now be written as $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$ and $i*\mathit{dt} - \mathit{off_c} < \mathit{thr} \mod \mathit{intv}$.
+## When group changes happen - the check range
+Let us start by finding all values $i \in [0;\mathit{n_g}]$ for which $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$ is true. We can differentiate between two cases on the sign of $\mathit{dt}$:
 
-Observe that the expression, $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$ is only ever true if $i$ is the spinner's group index. Solving for $i$ yields $$
-\left \lceil {\mathit{off} \over \lvert \mathit{dt} \rvert} \right \rceil \leq
-\sgn \mathit{dt} * i <
-\left \lceil {\mathit{off} \over \lvert \mathit{dt} \rvert} \right \rceil + \left \lceil {\mathit{thr} - (-\mathit{off} \bmod \lvert \mathit{dt] \rvert}) \over \lvert \mathit{dt} \rvert} \right \rceil \mod n_g
+- When $\mathit{dt} > 0$, then we define $$
+\mathit{off}_B = \begin{cases} (\mathit{off} \bmod \mathit{intv}) - \mathit{intv} & \text{if } (\mathit{off} \bmod \mathit{intv}) > \mathit{intv} - \mathit{dt} \\ \mathit{off} \bmod \mathit{intv} & \text{else} \end{cases}
+$$ (so that $\mathit{off} = \mathit{off}_B \mod \mathit{intv} \land -\mathit{dt} < \mathit{off}_B \leq \mathit{intv} - \mathit{dt}$). Solving for $i$ yields: $$
+\left \lceil {\mathit{off}_B \over \mathit{dt}} \right \rceil =
+\left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert \leq i <
+\left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert + \left \lceil {\mathit{thr} - (-\mathit{off}_B \bmod \lvert \mathit{dt} \rvert ) \over \lvert \mathit{dt} \rvert} \right \rceil
 $$
-**This means that spinner groups are not actually discrete values, but *ranges* of length $\left \lceil {\mathit{thr} - (-\mathit{off} \bmod \lvert \mathit{dt] \rvert}) \over \lvert \mathit{dt} \rvert} \right \rceil$ for which all frame offsets in the range will pass the check!** We will continue to call $g = \sgn \mathit{dt} * \left \lceil {\mathit{off} \over \lvert \mathit{dt} \rvert} \right \rceil$ the *group* of the spinner, however keep in mind that in practice, the actual check results can differ from what we expect using the regular definition of spinner groups.
-
-Note that we will focus on the left-hand side of the expression for the rest of this analysis, namely $g' = \left \lceil {\mathit{off} \over \lvert \mathit{dt} \rvert} \right \rceil$. This definition is useful as it still allows for checking if group changes occur, but also has the following relation hold: $$
-r' > 0 \iff \mathit{off}_{c-1} < \mathit{off}_c \iff g'_{c-1} \leq g'_c
+- When $\mathit{dt} < 0$, then we define $$
+\mathit{off}_B = \begin{cases} (\mathit{off} \bmod \mathit{intv}) - \mathit{intv} & \text{if } \mathit{off} \neq 0 \\ 0 & \text{else} \\ \end{cases}
+$$ (so that $\mathit{off} = \mathit{off}_B \mod \mathit{intv} \land -\mathit{intv} < \mathit{off}_B \leq 0$). We then reformulate the statement as: $$
+-\mathit{off}_B - i * \lvert \mathit{dt} \rvert < \mathit{thr} \mod \mathit{intv}
+$$ Solving for $i$ yields: $$
+\left \lfloor {-\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rfloor - \left \lceil {\mathit{thr} - (-\mathit{off}_B \bmod \lvert \mathit{dt} \rvert ) \over \lvert \mathit{dt} \rvert} \right \rceil < i \leq
+\left \lfloor {-\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rfloor = 
+\left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert 
 $$
-(note that $r > 0 \iff g_{c-1} \leq g_c$ holds for the original definition - **this means that group indices will change by $\sgn r$ after drifting**)
 
-We can now differentiate two different cases depending on the sign of $r'$:
+(Note that these ranges are not perfectly accurate - there can be group cycles where two or no values of $i \in [0;n_g)$ will fulfill the condition (namely $i = 0 \land i = n_g-1$ and $i = n_g$). These are results of drifts which cross cycle boundaries, and these drift-affected solutions of the equation will not be considered when determining spinner's group)
 
-- When $r' < 0$, then $g'_{c-1} \geq g'_c$. As such we want to find all values of $c$ for which $g'_{c-1} > g'_c \iff \left \lceil {\mathit{off}_{c-1} \over \lvert \mathit{dt} \rvert} \right \rceil > \left \lceil {\mathit{off}_c \over \lvert \mathit{dt} \rvert} \right \rceil$ holds. Multiplying both sides by $-1$ we get: $$
+**This means that spinner groups are not actually singluar discrete values, but *ranges* of values** (called the *check range*). We will continue to call $g = \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert \bmod n_g$ the *group* of the spinner, however keep in mind that in practice, the actual check results can differ from what we expect using the simple definition of spinner groups.
+
+**Additionaly, this means that spinner check behavior is affected to two types of drift**: drifts of the spinner group $g$, called *group drifts*, and temporary anomalies of the length $L = \left \lceil {\mathit{thr} - (-\mathit{off}_B \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil$ of the check range, called *length drifts*.
+
+From now on, we will call $\mathit{off}_B$ the *bounded offset* of the spinner. It will become useful later as $0 \leq \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert * \mathit{dt} - \mathit{off}_B < \lvert \mathit{dt} \rvert$ is true.
+
+### Group drifts
+*We will disregard $\mathit{thr}$ by assuming that it always is $\lvert \mathit{dt} \rvert$ for the rest of the group drift analysis - this elliminates length drift, which could otherwise affect things as well*
+
+Let $r' = \sgn \mathit{dt} * r$ and $\mathit{off}_c = \mathit{off}_B + c*r'$. Assuming our ideal definition of spinner groups, we expect that the following holds for all integer values of $c$, where $0 \leq i < n_g$ and $0 \leq i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert$: $$
+i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert \mod \mathit{intv} \iff i*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert \mod \mathit{intv}
+$$
+
+We now want to find all values of $c$ for which this is not true. Because of $\lvert r' \rvert \leq \mathit{intv} - \lvert \mathit{dt} \rvert$, the right hand side can not be true only because of the modulo term - as such we can restate our earlier condition as: $$
 \begin{aligned}
--\left \lceil {\mathit{off}_{c-1} \over \lvert \mathit{dt} \rvert} \right \rceil < -\left \lceil {\mathit{off}_c \over \lvert \mathit{dt} \rvert} \right \rceil \\
-\iff \left \lfloor {-(\mathit{off} + c*r' - r') \over \lvert \mathit{dt} \rvert} \right \rfloor < \left \lfloor {-(\mathit{off} + c*r') \over \lvert \mathit{dt} \rvert} \right \rfloor \\
-\iff \mathbf { \left \lfloor {c*(-r') - \mathit{off} - (-r')) \over \lvert \mathit{dt} \rvert} \right \rfloor < \left \lfloor {c*(-r') - \mathit{off} \over \lvert \mathit{dt} \rvert} \right \rfloor }
+&0 \leq v_c < \lvert \mathit{dt} \rvert \iff 0 \leq v_{c-1} = v_c + r' < \lvert \mathit{dt} \rvert \\
+&\text{(where } v_c = i*\mathit{dt} - \mathit{off}_c \text{)}
 \end{aligned}
 $$
-- When $r' > 0$, then $g_{c-1} \leq g_c$. As such we want to find all values of $c$ for which $g_{c-1} < g_c \iff \left \lceil {\mathit{off}_{c-1} \over \lvert \mathit{dt} \rvert} \right \rceil < \left \lceil {\mathit{off}_c \over \lvert \mathit{dt} \rvert} \right \rceil \iff \left \lceil {\mathit{off}_{c-1} \over \lvert \mathit{dt} \rvert} \right \rceil < {\mathit{off}_c \over \lvert \mathit{dt} \rvert}$ holds. Multiplying both sides by $\lvert dt \rvert$ and substituting $\left \lceil {a \over b} \right \rceil * b = a + (-a \bmod b)$ we get: $$
+
+This is obviously not always true - we can determine the values of $c$ for which it won't be by distinguishing between two cases depending on the sign of r':
+
+- When $r' < 0$, then $v_c > v_{c-1}$. As such we want to find all $c$ for which the following holds: $$
 \begin{aligned}
-\mathit{off}_{c-1} + (-\mathit{off}_{c-1} \bmod \mathit \lvert {dt} \rvert) < \mathit{off}_c \\
-\iff \mathit{off}_{c-1} + (-\mathit{off}_{c-1} \bmod \mathit \lvert {dt} \rvert) < \mathit{off}_{c-1} + r' \\
-\iff -\mathit{off}_{c-1} \bmod \mathit \lvert {dt} \rvert < r'
-\end{aligned}
-$$ Because $0 < r' < \mathit{dt}$ (as $|r'| = |\mathit{intv} - n_g * \lvert \mathit{dt} \rvert| = |\mathit{intv} - \left \lfloor {\mathit{intv} \over \lvert \mathit{dt} \rvert} \right \rceil * \lvert \mathit{dt} \rvert| < \lvert \mathit{dt} \rvert$), it holds that $r' \bmod \lvert \mathit{dt} \rvert = r'$, and as such: $$
-\begin{aligned}
-\iff -\mathit{off}_{c-1} < r' \mod \lvert \mathit{dt} \rvert \\
-\iff -(\mathit{off} + r'*c - r') < r' \mod \lvert \mathit{dt} \rvert \\
-\iff \mathbf { c*(-r') -(\mathit{off} - r') < \lvert r'\rvert \mod \lvert \mathit{dt} } \rvert
+0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \land \lnot \left( 0 \leq v_c \lor v_c < \lvert \mathit{dt} \rvert \right) \\
+\iff 0 \leq v_{c-1} = v_c + r' < \lvert \mathit{dt} \rvert \leq v_c \\
+\iff \lvert \mathit{dt} \rvert \leq v_c < \lvert \mathit{dt} \rvert - r' \\
+\implies v_c = (g*\mathit{dt} - (\mathit{off}_B + c*r')) < -r' \mod \lvert \mathit{dt} \rvert \\
+\iff -\mathit{off}_B - c*r' < -r' \mod \lvert \mathit{dt} \rvert \\
+\iff \mathbf { c * (-r') - \mathit{off}_B < \lvert r' \rvert \mod \lvert \mathit{dt} \rvert }
 \end{aligned}
 $$
-- When $r' = 0$, then there is no drift, and as such group changes will never occur
+	- As $\lvert \mathit{dt} \rvert \leq v_c < 2*\lvert \mathit{dt} \rvert$ holds, the condition is true for $i_c = i_{c-1} - \sgn \mathit{dt}$ because $$
+(i_{c-1} - \sgn \mathit{dt})*\mathit{dt} - \mathit{off}_c = i_{c-1}*\mathit{dt} - \lvert \mathit{dt} \rvert - \mathit{off}_c = v_c - \lvert \mathit{dt} \rvert \land 0 \leq v_c - \lvert \mathit{dt} \rvert < \lvert \mathit{dt} \rvert
+$$
+		- **This means that spinner drifts shift the spinner group by $-\sgn \mathit{dt} = \sgn \mathit{r}$ !**
+	- Note that $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ still holds.
+- When $r' > 0$, then $v_c < v_{c-1}$. As such we want to find all $c$ for which the following holds: $$
+\begin{aligned}
+0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \land \lnot \left( 0 \leq v_c \lor v_c < \lvert \mathit{dt} \rvert \right) \\
+\iff v_c < 0 \leq v_{c-1} = v_c + r' < \lvert \mathit{dt} \rvert \\
+\iff -r' \leq v_c < 0 \\
+\iff 0 \leq v_c + r' < r' \\
+\implies v_c + r' = (g*\mathit{dt} - (\mathit{off}_B + c*r')) + r' < r' \mod \lvert \mathit{dt} \rvert \\
+\iff -\mathit{off}_B - c*r' + r' < r' \mod \lvert \mathit{dt} \rvert \\
+\iff \mathbf { c * (-r') - (\mathit{off}_B - r') < \lvert r' \rvert \mod \lvert \mathit{dt} \rvert }
+\end{aligned}
+$$
+	- As $-\lvert \mathit{dt} \rvert \leq v_c < 0$ holds, the condition is true for $i_c = i_{c-1} + \sgn \mathit{dt}$ because $$
+(i_{c-1} + \sgn \mathit{dt})*\mathit{dt} - \mathit{off}_c = i_{c-1}*\mathit{dt} + \lvert \mathit{dt} \rvert - \mathit{off}_c = v_c + \lvert \mathit{dt} \rvert \land 0 \leq v_c + \lvert \mathit{dt} \rvert < \lvert \mathit{dt} \rvert
+$$
+		- **This means that spinner drifts shift the spinner group by $\sgn \mathit{dt} = \sgn \mathit{r}$ !**
+	- Note that $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ still holds.
+- When $r' = 0$, then there is no group drifting, and as such group changes will never occur
 
-**Note how both non-trivial cases match the exact structure of our original statement derived from `OnInterval`!** This means that the problem is recursive, and the indices of spinner cycles when spinners change groups behave just like a recursive instance of the original problem with the following parameters: $$
+(our initial assumption of $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ can be shown to inductively hold for all values of $c$ when $i_0 = g$, because we know that $0 \leq g*\mathit{dt} - \mathit{off}_B < \lvert \mathit{dt} \rvert$ holds as our base case, and that when a tick is not affected by drift, then by definition $0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \iff 0 \leq v_c < \lvert \mathit{dt} \rvert$ holds, or if it is, we have shown that the condition still holds)
+
+**Note how both non-trivial cases match the exact structure of our original statement derived from `OnInterval`!** This means that the problem is recursive, and the spinner cycle indices where group drift occurs behave just like a recursive instance of the original problem with the following parameters: $$
 \begin{aligned}
 &\mathit{dt}_R = -r' = -\sgn \mathit{dt} * r \\
 &t_R = c \\
 &\mathit{intv}_R = \lvert \mathit{dt} \rvert \\
 &\mathit{off}_R = \begin{cases}
-	\mathit{off} & \text{for } r' < 0 \iff \sgn \mathit{dt} \neq \sgn r\\
-	\mathit{off} - r' = \mathit{off} + \sgn \mathit{dt} * r & \text{for } r' > 0 \iff \sgn \mathit{dt} = \sgn r\\
+	\mathit{off}_B & \text{for } r' < 0 \iff \sgn \mathit{dt} \neq \sgn r\\
+	\mathit{off}_B - r' = \mathit{off}_B - \sgn \mathit{dt} * r & \text{for } r' > 0 \iff \sgn \mathit{dt} = \sgn r\\
 \end{cases} \\
 &\mathit{thr}_R = \lvert r' \rvert \\
 &\text{(where } r = \mathit{intv} - \lvert \mathit{dt} \rvert * n_g \text{)}
 \end{aligned}
 $$
-(note that because $\mathit{thr}_R = \lvert \mathit{dt}_R \rvert$, recursive cycles are not affected by length drift - their group range will always have a length of 1)
+(note that because $\mathit{thr}_R = \lvert \mathit{dt}_R \rvert$, recursive cycles are not affected by length drift - their check range will always have a length of 1)
 
-All of this implies that the cycle indices $c$ during which spinners change groups are also cyclic, with spinners changing groups ever group cycle index $c$ where $c = j*{n_g}_R + g_R$, where ${n_g}_R = \left \lfloor {\mathit{intv}_R \over \lvert \mathit{dt}_R \rvert} \right \rceil$ is the period of these recursive "group drift cycles", and $g_R$ is the recursive "group drift cycle group". It initially starts as $g_R = \sgn \mathit{dt}_R * \left \lceil {\mathit{off}_R \over \lvert \mathit{dt}_R \rvert} \right \rceil \bmod {n_g}_R$, **but is then also recursively affected by group drifting!** Because of $r > 0 \iff g_{c-1} \leq g_c$ , **drifts decrement the group index** (= load checks happen one frame earlier than expected) **when $r > 0$, and increment it** (= load checks happen one frame later than expected) **when $r < 0$**
+All of this implies that the cycle indices $c$ during which spinners change groups are also cyclic, with spinners changing groups ever group cycle index $c$ where $c = j*{n_g}_R + g_R$, where ${n_g}_R = \left \lfloor {\mathit{intv}_R \over \lvert \mathit{dt}_R \rvert} \right \rceil$ is the period of these recursive "group drift cycles", and $g_R$ is the recursive "group drift cycle group". **When $r < 0$, group drifts decrement the group index** (= load checks happen one frame earlier than expected), **and when $r > 0$, they increment it** (= load checks happen one frame later than expected).
 
-## The length of the check range
+### Length drifts
 As we derived above, the actual group of a spinner is not a discrete value, but instead a range of values, namely: $$
 \begin{aligned}
-\left \lceil {\mathit{off} \over \lvert \mathit{dt} \rvert} \right \rceil \leq
-\sgn \mathit{dt} * i <
-\left \lceil {\mathit{off} \over \lvert \mathit{dt} \rvert} \right \rceil + \left \lceil {\mathit{thr} - (-\mathit{off} \bmod \lvert \mathit{dt] \rvert}) \over \lvert \mathit{dt} \rvert} \right \rceil \mod n_g \\
-\iff \begin{cases}
-	i \in \left[g; g + L\right) &\text{for } \mathit{dt} > 0 \\
-	i \in \left(g - L; g\right] &\text{for } \mathit{dt} < 0
+&i \in \begin{cases}
+	\left[g; g + L\right) &\text{for } \mathit{dt} > 0 \\
+	\left(g - L; g\right] &\text{for } \mathit{dt} < 0
 \end{cases} \\
-\text{(where } L = \left \lceil {\mathit{thr} - (-\mathit{off} \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil \text{)}
+&\text{(where } L = \left \lceil {\mathit{thr} - (-\mathit{off}_B \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil \text{)}
 \end{aligned}
 $$
-(from now on, we will consider $L$ over $\mathit{off}_c$ instead of $\mathit{off}$)
+(from now on, we will consider $L$ over $\mathit{off}_c$ instead of $\mathit{off}_B$)
+***TODO: Can this be safely done?***
 
-$L$ is the length of this range, and by setting $\mathit{thr} = k * \lvert \mathit{dt} \rvert + o$, where $k = \left \lfloor {\mathit{thr} \over \lvert \mathit{dt} \rvert} \right \rfloor$ and $o = \mathit{thr} \bmod \lvert \mathit{dt} \rvert$, we can reformulate $L$ as $$
+$L$ is the length of this check range, and by setting $\mathit{thr} = k * \lvert \mathit{dt} \rvert + o$, where $k = \left \lfloor {\mathit{thr} \over \lvert \mathit{dt} \rvert} \right \rfloor$ (called the *base length*) and $o = \mathit{thr} \bmod \lvert \mathit{dt} \rvert$ (called the *length offset*), we can reformulate $L$ as $$
 L =
 \left \lceil {k * \lvert \mathit{dt} \rvert + o - (-\mathit{off}_c \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil =
 k + \left \lceil {o - (-\mathit{off}_c \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil = k + l
@@ -141,8 +180,8 @@ Because of $0 \leq o < \lvert \mathit{dt} \rvert$, $l$ can only ever be $0$ or $
 o - (-\mathit{off}_c \bmod \lvert \mathit{dt} \rvert) > 0 \\
 \iff o > (-\mathit{off}_c \bmod \lvert \mathit{dt} \rvert) \\
 \iff -\mathit{off}_c < o \mod \lvert \mathit{dt} \rvert \\
-\iff -(\mathit{off} + r'*c) < o \mod \lvert \mathit{dt} \rvert \\
-\iff \mathbf{ c*(-r') - \mathit{off} < o \mod \lvert \mathit{dt} \rvert } \\
+\iff -(\mathit{off}_B + r'*c) < o \mod \lvert \mathit{dt} \rvert \\
+\iff \mathbf{ c*(-r') - \mathit{off}_B < o \mod \lvert \mathit{dt} \rvert } \\
 \end{aligned}
 $$
 This defines another recursive cycle with $$
@@ -150,7 +189,7 @@ This defines another recursive cycle with $$
 &\mathit{dt}_L = -r' \\
 &t_L = c \\
 &\mathit{intv}_L = \lvert \mathit{dt} \rvert \\
-&\mathit{off}_L = \mathit{off} \\
+&\mathit{off}_L = \mathit{off}_B \\
 &\mathit{thr}_L = o = \mathit{thr} \bmod \lvert \mathit{dt} \rvert
 \end{aligned}
 $$
@@ -162,6 +201,7 @@ $$
 	- In this case, the recursive group drift cycle is one tick behind of the length drift cycle. The regular recursive cycle can still be used to predict the length drift, but one must look at the values from the next tick instead of the current value. The recursive length drift cycle of $L_L$ must then also be adjusted to use $\mathit{off}_R$ instead of $\mathit{off}_L$, as this cancels out the fact that values are taken from the next tick.
 	- This also means that length drifts either happen in the same group cycle, or in the group cycle before an actual group drift happens.
 
+***TODO: Length drift inversion for potentially cleaner results?***
 
 ## Why this even happens
 Careful readers might have noticed that all of the above analysis implicitly assumed that $r = \mathit{intv} \bmod \mathit{dt} \neq 0$, meaning that spinner offsets drift at all. However, as $\mathit{dt} = {1 \over 60}$ and $\mathit{intv} = 0.05$, $r$ should be $r = 0.05 \bmod {1 \over 60} = 0$. Then why is the above analysis relevant at all?

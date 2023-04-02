@@ -3,22 +3,28 @@ using System.Numerics;
 namespace SPINPA.Engine;
 
 public static class RecursiveCycleCalculator {
-    public static long CalcCycleGroup(BigRational interv, BigRational delta, BigRational off) {
-        off = CalcUtils.RMod(off, interv);
-
-        //Magical edge cases
-        if(delta > 0 && off - interv > -BigRational.Abs(delta)) off -= interv;
-        if(delta < 0 && off > 0) off -= interv;
-
-        long group = long.Abs((long) BigRational.Ceiling(off / BigRational.Abs(delta)));
-        Assert.AssertTrue(0 <= group && group <= CalcCycleLength(interv, delta));
-        return group;
+    public static long CalcCycleLength(BigRational interv, BigRational delta) {
+        Assert.AssertTrue(interv >= delta);
+        return (long) BigRational.Round(interv / BigRational.Abs(delta));
     }
 
-    public static long CalcCycleLength(BigRational interv, BigRational delta) {
-        BigRational f = interv / BigRational.Abs(delta);
-        if(1 < f && f < 2) return 2;
-        return (long) BigRational.Round(f);
+    public static BigRational CalcBoundedOffset(BigRational interv, BigRational delta, BigRational off) {
+        off = CalcUtils.RMod(off, interv);
+
+        //Magical off_B edge cases
+        if(delta > 0 && off > interv - BigRational.Abs(delta)) off -= interv;
+        if(delta < 0 && off > 0) off -= interv;
+
+        return off;
+    }
+
+    public static long CalcCycleGroup(BigRational interv, BigRational delta, BigRational off) {
+        off = CalcBoundedOffset(interv, delta, off);
+
+        long group = long.Abs((long) BigRational.Ceiling(off / BigRational.Abs(delta))), len = CalcCycleLength(interv, delta);
+        Assert.AssertTrue(0 <= group && group <= len);
+        Assert.AssertTrue(0 <= group*delta - off && group*delta - off < BigRational.Abs(delta));
+        return group % len;
     }
 
     public static BigRational CalcResidualDrift(BigRational interv, BigRational delta) => (interv - CalcCycleLength(interv, delta) * BigRational.Abs(delta));
@@ -35,7 +41,10 @@ public static class RecursiveCycleCalculator {
     public static void DescendRecursionLevels(ref BigRational interv, ref BigRational delta, ref BigRational off, int recLevel) {
         for(; recLevel > 0; recLevel--) {
             BigRational residualDrift = CalcResidualDrift(interv, delta);
-            if(BigRational.Sign(delta) == BigRational.Sign(residualDrift)) off += BigRational.Sign(delta) * residualDrift;
+
+            off = CalcBoundedOffset(interv, delta, off);
+            if(BigRational.Sign(delta) == BigRational.Sign(residualDrift)) off -= BigRational.Sign(delta) * residualDrift;
+
             interv = BigRational.Abs(delta);
             delta = -BigRational.Sign(delta) * residualDrift;
         }

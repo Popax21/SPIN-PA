@@ -1,4 +1,4 @@
-***Analysis, research and code by Popax21, with help from XMinty7 and others**
+**Analysis, research and code by Popax21, with help from XMinty7 and others**
 
 *The name "SPIN theory" is derived from the fact that this theory can be visualized as a recursive set of sliding windows "spinning" / looping around in a residual number field*
 
@@ -90,7 +90,7 @@ $$
 From now on, we will call $\mathit{off}_B$ the *bounded offset* of the spinner. It will become useful later as $0 \leq \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert * \mathit{dt} - \mathit{off}_B < \lvert \mathit{dt} \rvert$ is true.
 
 ### Group drifts
-*We will disregard $\mathit{thr}$ by assuming that it always is $\lvert \mathit{dt} \rvert$ for the rest of the group drift analysis - this elliminates length drift, which could otherwise affect things as well*
+We will disregard $\mathit{thr}$ by assuming that it always is $\lvert \mathit{dt} \rvert$ for the rest of the group drift analysis - this elliminates length drift, which could otherwise affect things as well. Check results which disregard $\mathit{thr}$ like this are called *raw check results*.
 
 Let $r' = \sgn \mathit{dt} * r$ and $\mathit{off}_c = \mathit{off}_B + c*r'$. Assuming our ideal definition of spinner groups, we expect that the following holds for all integer values of $c$, where $0 \leq i < n_g$ and $0 \leq i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert$: $$
 i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert \mod \mathit{intv} \iff i*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert \mod \mathit{intv}

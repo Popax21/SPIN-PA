@@ -45,4 +45,7 @@ public static class CalcUtils {
     public static long RMod(long v, long m) => ((v % m) + m) % m;
     public static float RMod(float v, float m) => ((v % m) + m) % m;
     public static BigRational RMod(BigRational v, BigRational m) => ((v % m) + m) % m;
+
+    public static int FloorDiv(int a, int b) => (a + int.CopySign(((int.Sign(a) != int.Sign(b)) ? (b-1) : 0), a)) / b;
+    public static long FloorDiv(long a, long b) => (a + long.CopySign(((long.Sign(a) != long.Sign(b)) ? (b-1) : 0), a)) / b;
 }

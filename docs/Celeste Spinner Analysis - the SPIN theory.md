@@ -92,7 +92,7 @@ From now on, we will call $\mathit{off}_B$ the *bounded offset* of the spinner. 
 ### Group drifts
 We will disregard $\mathit{thr}$ by assuming that it always is $\lvert \mathit{dt} \rvert$ for the rest of the group drift analysis - this elliminates length drift, which could otherwise affect things as well. Check results which disregard $\mathit{thr}$ like this are called *raw check results*.
 
-Let $r' = \sgn \mathit{dt} * r$ and $\mathit{off}_c = \mathit{off}_B + c*r'$. Assuming our ideal definition of spinner groups, we expect that the following holds for all integer values of $c$, where $0 \leq i < n_g$ and $0 \leq i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert$: $$
+Let $r' = \sgn \mathit{dt} * r$ and $\mathit{off}_c = \mathit{off}_B + c*r'$. Assuming our ideal definition of spinner groups, we expect that the following holds for all integer values of $c$, where $0 \leq i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert$: $$
 i*\mathit{dt} - \mathit{off}_{c-1} < \lvert \mathit{dt} \rvert \mod \mathit{intv} \iff i*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert \mod \mathit{intv}
 $$
 
@@ -107,7 +107,7 @@ This is obviously not always true - we can determine the values of $c$ for which
 
 - When $r' < 0$, then $v_c > v_{c-1}$. As such we want to find all $c$ for which the following holds: $$
 \begin{aligned}
-0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \land \lnot \left( 0 \leq v_c \lor v_c < \lvert \mathit{dt} \rvert \right) \\
+0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \land \lnot \left( 0 \leq v_c < \lvert \mathit{dt} \rvert \right) \\
 \iff 0 \leq v_{c-1} = v_c + r' < \lvert \mathit{dt} \rvert \leq v_c \\
 \iff \lvert \mathit{dt} \rvert \leq v_c < \lvert \mathit{dt} \rvert - r' \\
 \implies v_c = (g*\mathit{dt} - (\mathit{off}_B + c*r')) < -r' \mod \lvert \mathit{dt} \rvert \\
@@ -118,11 +118,11 @@ $$
 	- As $\lvert \mathit{dt} \rvert \leq v_c < 2*\lvert \mathit{dt} \rvert$ holds, the condition is true for $i_c = i_{c-1} - \sgn \mathit{dt}$ because $$
 (i_{c-1} - \sgn \mathit{dt})*\mathit{dt} - \mathit{off}_c = i_{c-1}*\mathit{dt} - \lvert \mathit{dt} \rvert - \mathit{off}_c = v_c - \lvert \mathit{dt} \rvert \land 0 \leq v_c - \lvert \mathit{dt} \rvert < \lvert \mathit{dt} \rvert
 $$
-		- **This means that spinner drifts shift the spinner group by $-\sgn \mathit{dt} = \sgn \mathit{r}$ !**
+		- **This means that spinner drifts shift the spinner group by $-\sgn \mathit{dt} = \sgn \mathit{r}$ , and $i_c$ is not bounded within the range of $[0;n_g)$!**
 	- Note that $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ still holds.
 - When $r' > 0$, then $v_c < v_{c-1}$. As such we want to find all $c$ for which the following holds: $$
 \begin{aligned}
-0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \land \lnot \left( 0 \leq v_c \lor v_c < \lvert \mathit{dt} \rvert \right) \\
+0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \land \lnot \left( 0 \leq v_c < \lvert \mathit{dt} \rvert \right) \\
 \iff v_c < 0 \leq v_{c-1} = v_c + r' < \lvert \mathit{dt} \rvert \\
 \iff -r' \leq v_c < 0 \\
 \iff 0 \leq v_c + r' < r' \\
@@ -134,11 +134,11 @@ $$
 	- As $-\lvert \mathit{dt} \rvert \leq v_c < 0$ holds, the condition is true for $i_c = i_{c-1} + \sgn \mathit{dt}$ because $$
 (i_{c-1} + \sgn \mathit{dt})*\mathit{dt} - \mathit{off}_c = i_{c-1}*\mathit{dt} + \lvert \mathit{dt} \rvert - \mathit{off}_c = v_c + \lvert \mathit{dt} \rvert \land 0 \leq v_c + \lvert \mathit{dt} \rvert < \lvert \mathit{dt} \rvert
 $$
-		- **This means that spinner drifts shift the spinner group by $\sgn \mathit{dt} = \sgn \mathit{r}$ !**
+		- **This means that spinner drifts shift the spinner group by $\sgn \mathit{dt} = \sgn \mathit{r}$ , and $i_c$ is not bounded within the range of $[0;n_g)$!**
 	- Note that $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ still holds.
 - When $r' = 0$, then there is no group drifting, and as such group changes will never occur
 
-(our initial assumption of $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ can be shown to inductively hold for all values of $c$ when $i_0 = g$, because we know that $0 \leq g*\mathit{dt} - \mathit{off}_B < \lvert \mathit{dt} \rvert$ holds as our base case, and that when a tick is not affected by drift, then by definition $0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \iff 0 \leq v_c < \lvert \mathit{dt} \rvert$ holds, or if it is, we have shown that the condition still holds)
+(our initial assumption of $0 \leq i_c*\mathit{dt} - \mathit{off}_c < \lvert \mathit{dt} \rvert$ can be shown to inductively hold for all values of $c$ when $i_0 = \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert$, because we know that $0 \leq \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert * \mathit{dt} - \mathit{off}_B < \lvert \mathit{dt} \rvert$ holds as our base case, and that when a tick is not affected by drift, then by definition $0 \leq v_{c-1} < \lvert \mathit{dt} \rvert \iff 0 \leq v_c < \lvert \mathit{dt} \rvert$ holds, or if it is, we have shown that the condition still holds)
 
 **Note how both non-trivial cases match the exact structure of our original statement derived from `OnInterval`!** This means that the problem is recursive, and the spinner cycle indices where group drift occurs behave just like a recursive instance of the original problem with the following parameters: $$
 \begin{aligned}

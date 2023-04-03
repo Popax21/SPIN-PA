@@ -23,8 +23,9 @@ public static class RecursiveCycleCalculator {
 
         long group = long.Abs((long) BigRational.Ceiling(off / BigRational.Abs(delta))), len = CalcCycleLength(interv, delta);
         Assert.AssertTrue(0 <= group && group <= len);
+        Assert.AssertTrue(CalcResidualDrift(interv, delta) > 0 || group < len);
         Assert.AssertTrue(0 <= group*delta - off && group*delta - off < BigRational.Abs(delta));
-        return group % len;
+        return group;
     }
 
     public static BigRational CalcResidualDrift(BigRational interv, BigRational delta) => (interv - CalcCycleLength(interv, delta) * BigRational.Abs(delta));

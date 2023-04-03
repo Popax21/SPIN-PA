@@ -61,7 +61,7 @@ c*n_g*\mathit{dt} + i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{int
 $$
 Note that the final expression differs from what we would expect if all spinner cycles were exactly equal! Instead of $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$, which would mean that the values of our expression would loop every group cycle (as it is only dependent on the group offset $i$), we got $i*\mathit{dt} - (\mathit{off} + \sgn \mathit{dt} * r*c) < \mathit{thr} \mod \mathit{intv}$. **This means that the effective offset of each spinner shifts by $\sgn \mathit{dt} * r$  every $n_g$ frames!**
 
-## When group changes happen - the check range
+## When drift happens - the check range
 Let us start by finding all values $i \in [0;\mathit{n_g}]$ for which $i*\mathit{dt} - \mathit{off} < \mathit{thr} \mod \mathit{intv}$ is true. We can differentiate between two cases on the sign of $\mathit{dt}$:
 
 - When $\mathit{dt} > 0$, then we define $$

@@ -4,6 +4,8 @@ using System.Numerics;
 namespace SPINPA.Engine;
 
 public readonly record struct EffectiveDTRange(long StartFrame, long EndFrame, float StartTimeActive, int TimeActiveExponent, float EffectiveDT, BigRational TransitionDT) {
+    public readonly long NumFrames = EndFrame - StartFrame;
+
     public static IEnumerable<EffectiveDTRange> EnumerateDTRanges() {
         int dtExp = FloatUtils.GetExponent(Constants.DeltaTime), dtMant = FloatUtils.GetMantissa(Constants.DeltaTime);
 

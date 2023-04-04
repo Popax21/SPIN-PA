@@ -55,6 +55,7 @@ public sealed class ValidateCommand : CLICommand {
     private readonly Option<bool> quietOpt, progressOpt;
 
     //hazard_checks
+    private readonly Option<bool> deepValidationOpt, skipValidationOpt;
     private readonly Option<float> checkIntvOpt;
     private readonly Argument<float> hazardOffArg;
 
@@ -67,6 +68,8 @@ public sealed class ValidateCommand : CLICommand {
         Command.AddCommand(dtRangesCmd);
 
         Command hazardChecksCmd = new Command("hazard_checks", "Validates the hazard interval check result sequence");
+        hazardChecksCmd.AddOption(deepValidationOpt = new Option<bool>("--deep-validation", description: "Whether to enable deep interval check cycle validation", getDefaultValue: () => true));
+        hazardChecksCmd.AddOption(skipValidationOpt = new Option<bool>("--skip-validation", description: "Whether to enable skip interval check cycle validation", getDefaultValue: () => true));
         hazardChecksCmd.AddOption(checkIntvOpt = new Option<float>("--check-interval", description: "The OnInterval check interval", getDefaultValue: () => Constants.HazardLoadInterval));
         hazardChecksCmd.AddArgument(hazardOffArg = new Argument<float>("hazard-offset", description: "The hazard offset whose sequence to check"));
         hazardChecksCmd.SetHandler(ValidateHazardChecks);
@@ -74,7 +77,7 @@ public sealed class ValidateCommand : CLICommand {
     }
 
     private void ValidateDTRanges(InvocationContext ctx) => RunValidator(ctx, v => v.ValidateDTRanges());
-    private void ValidateHazardChecks(InvocationContext ctx) => RunValidator(ctx, v => v.ValidateIntervalCheckCycles(ctx.ParseResult.GetValueForArgument(hazardOffArg), ctx.ParseResult.GetValueForOption(checkIntvOpt)));
+    private void ValidateHazardChecks(InvocationContext ctx) => RunValidator(ctx, v => v.ValidateIntervalCheckCycles(ctx.ParseResult.GetValueForArgument(hazardOffArg), ctx.ParseResult.GetValueForOption(checkIntvOpt), ctx.ParseResult.GetValueForOption(deepValidationOpt), ctx.ParseResult.GetValueForOption(skipValidationOpt)));
 
     private void RunValidator(InvocationContext ctx, Action<Validator> cb) {
         ConsoleValidator validator = new ConsoleValidator(ctx.Console, ctx.ParseResult.GetValueForOption(quietOpt), ctx.ParseResult.GetValueForOption(progressOpt));

@@ -59,67 +59,104 @@ public abstract class Validator {
 
             if(progressUpdateTimer-- < 0) {
                 progressUpdateTimer = long.Max(dtRangeIt.Current.NumFrames / ProgressPrecision, MinReportingGap);
-                LogProgress($"Verifying DT range {dtRangeIdx} [frames {dtRangeIt.Current.StartFrame}-{dtRangeIt.Current.EndFrame}]", (float) (frame - dtRangeIt.Current.StartFrame) / dtRangeIt.Current.NumFrames);
+                LogProgress($"Validating DT range {dtRangeIdx} [frames {dtRangeIt.Current.StartFrame}-{dtRangeIt.Current.EndFrame}]", (float) (frame - dtRangeIt.Current.StartFrame) / dtRangeIt.Current.NumFrames);
             }
         }
 
         Assert.AssertTrue(!dtRangeIt.MoveNext());
     }
 
-    public void ValidateIntervalCheckCycles(float off, float intv) {
+    public void ValidateIntervalCheckCycles(float off, float intv, bool runDeepValidation = true, bool runSkipValidation = true) {
         IntervalCheckCyclePredictor pred = new IntervalCheckCyclePredictor(off, intv);
 
-        LogMessage($"Starting interval check cycles validation for offset {off:F30} interval {intv:F30}");
+        //>>>>>>>>>>>>>>> DEEP VALIDATION <<<<<<<<<<<<<<<
+        //Go over each frame and check the predicted state against the expected
+        if(runDeepValidation) {
+            LogMessage($"Starting deep interval check cycle validation for offset {off:F30} interval {intv:F30}");
 
-        float lastTimeActive = float.NaN;
-        long progressUpdateTimer = 0;
-        foreach(float timeActive in EnumerateTimeActiveValues()) {
-            long frame = pred.CurrentFrame;
+            float lastTimeActive = float.NaN;
+            long progressUpdateTimer = 0;
+            foreach(float timeActive in EnumerateTimeActiveValues()) {
+                long frame = pred.CurrentFrame;
 
-            try {
-                //Check recursive cycle states
-                foreach(IntervalCheckCycleDTRangePredictor.RecursiveCycle cycle in pred.CurrentRange.DTRangePredictor.RecursiveCycles) {
-                    Assert.AssertTrue((CalcUtils.RMod(cycle.CurTickCount*cycle.Delta - cycle.Offset, cycle.Interval) < BigRational.Abs(cycle.Delta)) == cycle.CurRawCheckResult);
-                    Assert.AssertTrue((CalcUtils.RMod(cycle.CurTickCount*cycle.Delta - cycle.Offset, cycle.Interval) < cycle.Threshold) == cycle.CurRangeCheckResult);
+                try {
+                    //Check recursive cycle states
+                    foreach(IntervalCheckCycleDTRangePredictor.RecursiveCycle cycle in pred.CurrentRange.DTRangePredictor.RecursiveCycles) {
+                        Assert.AssertTrue((CalcUtils.RMod(cycle.CurTickCount*cycle.Delta - cycle.Offset, cycle.Interval) < BigRational.Abs(cycle.Delta)) == cycle.CurRawCheckResult);
+                        Assert.AssertTrue((CalcUtils.RMod(cycle.CurTickCount*cycle.Delta - cycle.Offset, cycle.Interval) < cycle.Threshold) == cycle.CurRangeCheckResult);
+                    }
+
+                    //Check the predicted result against the expected
+                    Assert.AssertTrue(pred.CheckResult == DoOnIntervalCheck(timeActive, intv, off));
+                } catch(Exception e) {
+                    throw new ApplicationException($"Error during validation of frame {frame} [TimeActive={timeActive:F30} OnInterval={DoOnIntervalCheck(timeActive, intv, off)} CheckResult={pred.CheckResult}]", e);
                 }
 
-                //Check the predicted results against the expected
-                bool expectedRes = DoOnIntervalCheck(timeActive, intv, off);
+                //Check if TimeActive froze
+                if(timeActive == lastTimeActive) break;
+                lastTimeActive = timeActive;
 
-                //-> Single advance
-                Assert.AssertTrue(pred.CheckResult == expectedRes);
+                //Advance to the next frame
+                int lastRangeIdx = pred.CurrentRangeIndex;
+                pred.CurrentFrame++;
+                if(lastRangeIdx != pred.CurrentRangeIndex) {
+                    LogMessage($"Advancing to DT range {pred.CurrentRangeIndex} on frame {frame}: frames {pred.CurrentRange.StartFrame}-{pred.CurrentRange.EndFrame} effDt={pred.CurrentRange.DTRangePredictor.EffectiveDT:F30}");
+                    pred.CurrentRange.DTRangePredictor.Reset();
 
-                //-> Rewind from 0
-                pred.CurrentRange.DTRangePredictor.Reset();
-                pred.CurrentFrame = frame;
-                Assert.AssertTrue(pred.CheckResult == expectedRes);
+                    progressUpdateTimer = 0;
+                }
 
-                //-> Rewind from random frame
-                pred.CurrentRange.DTRangePredictor.Reset();
-                pred.CurrentRange.DTRangePredictor.AdvanceFrames(new Random(unchecked((int) frame)).NextInt64(0, frame));
-                pred.CurrentFrame = frame;
-                Assert.AssertTrue(pred.CheckResult == expectedRes);
-            } catch(Exception e) {
-                throw new ApplicationException($"Error during validation of frame {frame} [TimeActive={timeActive:F30} OnInterval={DoOnIntervalCheck(timeActive, intv, off)} CheckResult={pred.CheckResult}]", e);
+                if(progressUpdateTimer-- < 0) {
+                    progressUpdateTimer = long.Max(pred.CurrentRange.NumFrames / ProgressPrecision, MinReportingGap);
+                    LogProgress($"Deep-Validating DT range {1+pred.CurrentRangeIndex}/{pred.Ranges.Length} [frames {pred.CurrentRange.StartFrame}-{pred.CurrentRange.EndFrame}]", (float) pred.CurrentRange.DTRangePredictor.CurrentFrame / pred.CurrentRange.NumFrames);
+                }
             }
+        }
 
-            //Check if TimeActive froze
-            if(timeActive == lastTimeActive) break;
-            lastTimeActive = timeActive;
+        //>>>>>>>>>>>>>>> SKIP VALIDATION <<<<<<<<<<<<<<<
+        //Skip over large ranges of frames at once
+        if(runSkipValidation) {
+            LogMessage($"Starting skip interval check cycle validation for offset {off:F30} interval {intv:F30}");
+            pred.CurrentFrame = 0;
 
-            //Advance to the next frame
-            int lastRangeIdx = pred.CurrentRangeIndex;
-            pred.CurrentFrame++;
-            if(lastRangeIdx != pred.CurrentRangeIndex) {
-                LogMessage($"Advancing DT range {lastRangeIdx}->{pred.CurrentRangeIndex} on frame {frame}: frames {pred.CurrentRange.StartFrame}-{pred.CurrentRange.EndFrame} effDt={pred.CurrentRange.DTRangePredictor.EffectiveDT:F30}");
-                pred.CurrentRange.DTRangePredictor.Reset();
+            Random rng = new Random(421234);
+            float lastTimeActive = float.NaN;
+            long frame = 0, progressUpdateTimer = 0;
+            foreach(float timeActive in EnumerateTimeActiveValues()) {
+                //Advance to this frame for some random frames, and check if the expected state matches
+                if(rng.NextInt64(pred.CurrentRange.NumFrames / 40) < 1) {
+                    int lastRangeIdx = pred.CurrentRangeIndex;
+                    long prevFrame = pred.CurrentFrame;
+                    pred.CurrentFrame = frame;
+                    if(lastRangeIdx != pred.CurrentRangeIndex) {
+                        LogMessage($"Advancing to DT range {pred.CurrentRangeIndex} on frame {frame}: frames {pred.CurrentRange.StartFrame}-{pred.CurrentRange.EndFrame} effDt={pred.CurrentRange.DTRangePredictor.EffectiveDT:F30}");
+                        progressUpdateTimer = 0;
+                    }
+                    
+                    try {
+                        //Check recursive cycle states
+                        foreach(IntervalCheckCycleDTRangePredictor.RecursiveCycle cycle in pred.CurrentRange.DTRangePredictor.RecursiveCycles) {
+                            Assert.AssertTrue((CalcUtils.RMod(cycle.CurTickCount*cycle.Delta - cycle.Offset, cycle.Interval) < BigRational.Abs(cycle.Delta)) == cycle.CurRawCheckResult);
+                            Assert.AssertTrue((CalcUtils.RMod(cycle.CurTickCount*cycle.Delta - cycle.Offset, cycle.Interval) < cycle.Threshold) == cycle.CurRangeCheckResult);
+                        }
 
-                progressUpdateTimer = 0;
-            }
+                        //Check the predicted result against the expected
+                        Assert.AssertTrue(pred.CheckResult == DoOnIntervalCheck(timeActive, intv, off));
+                    } catch(Exception e) {
+                        throw new ApplicationException($"Error during validation of frame skip {prevFrame}->{frame} {pred.CurrentFrame} {pred.CurrentRange.DTRangePredictor.CurrentFrame} [TimeActive={timeActive:F30} OnInterval={DoOnIntervalCheck(timeActive, intv, off)} CheckResult={pred.CheckResult}]", e);
+                    }
+                }
 
-            if(progressUpdateTimer-- < 0) {
-                progressUpdateTimer = long.Max(pred.CurrentRange.NumFrames / ProgressPrecision, MinReportingGap);
-                LogProgress($"Verifying DT range {1+pred.CurrentRangeIndex}/{pred.Ranges.Length} [frames {pred.CurrentRange.StartFrame}-{pred.CurrentRange.EndFrame}]", (float) pred.CurrentRange.DTRangePredictor.CurrentFrame / pred.CurrentRange.NumFrames);
+                //Check if TimeActive froze
+                if(timeActive == lastTimeActive) break;
+                lastTimeActive = timeActive;
+
+                if(progressUpdateTimer-- < 0) {
+                    progressUpdateTimer = long.Max(pred.CurrentRange.NumFrames / ProgressPrecision, MinReportingGap);
+                    LogProgress($"Skip-Validating DT range {1+pred.CurrentRangeIndex}/{pred.Ranges.Length} [frames {pred.CurrentRange.StartFrame}-{pred.CurrentRange.EndFrame}]", (float) pred.CurrentRange.DTRangePredictor.CurrentFrame / pred.CurrentRange.NumFrames);
+                }
+
+                frame++;
             }
         }
     }

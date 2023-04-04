@@ -126,10 +126,6 @@ public sealed class IntervalCheckCycleDTRangePredictor {
             CurTickCount = -1;
             CurCycleOffset = CycleLength-1;
             CurCycleTarget = CycleLength + InitialCycleTarget;
-
-            TicksSinceLastRawCheck = CurCycleOffset - (InitialCycleTarget - ((NextCycle?.CurRawCheckResult ?? false) ? BigRational.Sign(ResidualDrift) : 0));
-            Assert.AssertTrue(0 <= TicksSinceLastRawCheck);
-
             UpdateCheckResults();
 
             //Advance to tick 0
@@ -140,33 +136,28 @@ public sealed class IntervalCheckCycleDTRangePredictor {
             if(ticks < 0) throw new ArgumentOutOfRangeException(nameof(ticks));
             if(ticks == 0) return 0;
 
-            //Split of the last tick advance from 2+ tick to ensure PrevRangeCheckResult is updated correctly
-            if(ticks >= 2 && willUpdatePrev) return AdvanceTicks(ticks-1, willUpdatePrev: true) + AdvanceTicks(1, willUpdatePrev: true);
-
-            //Update ticks since last raw check
-            TicksSinceLastRawCheck += ticks;
+            //Split off the last tick advance from 2+ tick to ensure PrevRangeCheckResult is updated correctly
+            if(ticks >= 2 && !willUpdatePrev) return AdvanceTicks(ticks-1, willUpdatePrev: true) + AdvanceTicks(1, willUpdatePrev: true);
 
             //Determine number of target hits
             Assert.AssertTrue(CurCycleOffset < CurCycleTarget && CurCycleTarget - CurCycleOffset <= CycleLength+1);
-            long hitCount = 0, nextHitCount = 0, hRem = CurCycleTarget - CurCycleOffset;
-            for(long tOff = 0; tOff < ticks;) {
-                //Check if we can hit the target
-                long rTicks = ticks - tOff;
-                if(rTicks < hRem) break;
 
-                //Register hit
-                hitCount++;
-                TicksSinceLastRawCheck = rTicks - hRem;
+            long hitCount = 0, nextHitCount = 0;
+            long remTicks = (CycleLength - TicksTillNextRawCheck) + ticks;
+            while(true) {
+                //Calculate a conservative estimate of how often we can hit the target
+                long hc = remTicks / CycleLength;
+                if(hc == 0) break;
+                if(ResidualDrift > 0) hc = long.Max(1, (remTicks - hc) / CycleLength);
 
-                //Advance counters
-                tOff += hRem;
-                hRem = CycleLength;
+                //Register these 100% confirmed hits
+                hitCount += hc;
+                remTicks -= hc*CycleLength;
 
-                //Tick next cycle
-                if(NextCycle?.AdvanceTicks(1) > 0) {
-                    nextHitCount++;
-                    hRem += BigRational.Sign(ResidualDrift);
-                }
+                //Advance the next recursive cycle, and apply drift to the number of remaining ticks
+                long nhc = NextCycle?.AdvanceTicks(hc) ?? 0;
+                nextHitCount += nhc;
+                remTicks -= BigRational.Sign(ResidualDrift) * nhc;
             }
 
             //Update offset and target value
@@ -188,6 +179,7 @@ public sealed class IntervalCheckCycleDTRangePredictor {
 
         private void UpdateCheckResults() {
             //Update raw check result
+            TicksSinceLastRawCheck = CurCycleOffset - (CurCycleTarget - ((NextCycle?.CurRawCheckResult ?? false) ? BigRational.Sign(ResidualDrift) : 0) - CycleLength);
             PrevRawCheckResult = TicksSinceLastRawCheck == 1;
             CurRawCheckResult = TicksSinceLastRawCheck == 0;
             NextRawCheckResult = TicksTillNextRawCheck == 1;

@@ -38,7 +38,7 @@ $$
 By multiplying both sides by $\mathit{intv}$ and substituting $\left \lfloor {a \over b} \right \rfloor * b = a - (a \bmod b)$ we can reformulate this to obtain: $$
 T - \mathit{off} - \mathit{dt} < T - \mathit{off} - ((T - \mathit{off}) \bmod \mathit{intv})
 $$
-Subtracting $T - \mathit{off} - \mathit{dt}$ from both sides yields $$
+Subtracting $T - \mathit{off}$ from both sides yields $$
 -\mathit{dt} < -((T - \mathit{off}) \bmod \mathit{intv}) \iff (T - \mathit{off}) \bmod \mathit{intv} < \mathit{dt}
 $$and because $\mathit{intv} > \mathit{dt} \iff \mathit{dt} \bmod \mathit{intv} = \mathit{dt}$ we get
 $$

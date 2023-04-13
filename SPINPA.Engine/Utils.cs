@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace SPINPA.Engine;
 
@@ -8,6 +9,7 @@ public static class Assert {
         public AssertionFailureException() : base("ASSERTION FAILURE") {}
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void AssertTrue(bool cond) {
         if(!cond) throw new AssertionFailureException();
     }
@@ -44,7 +46,15 @@ public static class CalcUtils {
     public static int RMod(int v, int m) => ((v % m) + m) % m;
     public static long RMod(long v, long m) => ((v % m) + m) % m;
     public static float RMod(float v, float m) => ((v % m) + m) % m;
-    public static BigRational RMod(BigRational v, BigRational m) => ((v % m) + m) % m;
+    public static BigRational RMod(BigRational v, BigRational m) {
+        BigRational.SafeCPU cpu = BigRational.task_cpu;
+        cpu.div(v, m);
+        cpu.rnd(0, (v < 0) ? 4 : 0); //Take the floor
+        cpu.mul(m);
+        cpu.neg();
+        cpu.add(v);
+        return cpu.popr();
+    }
 
     public static int FloorDiv(int a, int b) => (a + int.CopySign(((int.Sign(a) != int.Sign(b)) ? (b-1) : 0), a)) / b;
     public static long FloorDiv(long a, long b) => (a + long.CopySign(((long.Sign(a) != long.Sign(b)) ? (b-1) : 0), a)) / b;

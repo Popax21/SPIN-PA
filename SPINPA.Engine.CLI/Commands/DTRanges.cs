@@ -41,12 +41,14 @@ public sealed class DTRangesCommand : CLICommand {
             if(startTA) ctx.Console.WriteLine($"-> startTA={FormatFloat(range.StartTimeActive, false)}");
             if(effectiveDTs) ctx.Console.WriteLine($"-> effDT={FormatFloat(range.EffectiveDT, false)} transEffDT={FormatFloat(range.TransitionDT, false)}");
 
-            if(cycleDepth > 0 && (cycleDeltas || cycleIntervals || cycleDrifts || cycleLens)) {
+            if(cycleDepth > 0 && (cycleDeltas || cycleIntervals || cycleDrifts || cycleLens) && range.EffectiveDT != 0) {
                 ctx.Console.WriteLine("-> recursive cycles:");
 
                 StringBuilder sb = new StringBuilder();
                 BigRational cycleIntv = new BigRational(Constants.HazardLoadInterval), cycleDelta = new BigRational(range.EffectiveDT);
                 for(int i = 0; i < cycleDepth; i++) {
+                    if(cycleDelta == 0) break;
+
                     sb.Clear();
                     sb.Append($"    {i}:");
                     if(cycleDeltas) sb.Append($" dt={FormatFloat(cycleDelta, true)}");

@@ -177,7 +177,7 @@ public sealed class IntervalCheckDTRangePredictor {
             if(targetHits > 0) return BigRational.Sign(ResidualDrift) * NextCycle.CalcNumTargetHits(targetHits);
 
             //We need to cancel out that the current raw check result of the next cycle corresponds to if the *next* raw check of this cycle did group drift
-            //So we need one additional retreat (whose eventual target hit we have to cancel out) to arrive at the correct result
+            //So we need one additional retreat (whose potential target hit we have to cancel out) to arrive at the correct result
             long numHits = NextCycle.CalcNumTargetHits(-(-targetHits + 1));
             if(NextCycle._TicksSinceLastRawCheck == 0) numHits--;
             return BigRational.Sign(ResidualDrift) * numHits;
@@ -426,8 +426,7 @@ public sealed class IntervalCheckDTRangePredictor {
         BigRational cOff = off, cIntv = intv, cDelta = effDt, cThresh = new BigRational(Constants.DeltaTime);
         while(cDelta != 0) {
             cycles.Add(new RecursiveCycle(this, cycles.Count, cOff, cIntv, cDelta, cThresh));
-            cThresh = RecursiveCycleCalculator.CalcLengthOffset(cThresh, cDelta);
-            RecursiveCycleCalculator.DescendRecursionLevels(ref cIntv, ref cDelta, ref cOff, 1);
+            RecursiveCycleCalculator.DescendRecursionLevels(ref cIntv, ref cDelta, ref cThresh, ref cOff, 1);
         }
         
         RecursiveCycles = cycles.ToArray();

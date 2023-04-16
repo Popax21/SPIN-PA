@@ -34,18 +34,19 @@ public static class RecursiveCycleCalculator {
     public static long CalcBaseLength(BigRational thresh, BigRational delta) => (long) BigRational.Floor(thresh / BigRational.Abs(delta));
     public static BigRational CalcLengthOffset(BigRational thresh, BigRational delta) => thresh % BigRational.Abs(delta);
 
-    public static void DescendRecursionLevels(ref BigRational interv, ref BigRational delta, int recLevel) {
+    public static void DescendRecursionLevels(ref BigRational interv, ref BigRational delta, ref BigRational thresh, int recLevel) {
         BigRational off = default;
-        DescendRecursionLevels(ref interv, ref delta, ref off, recLevel);
+        DescendRecursionLevels(ref interv, ref delta, ref thresh, ref off, recLevel);
     }
 
-    public static void DescendRecursionLevels(ref BigRational interv, ref BigRational delta, ref BigRational off, int recLevel) {
+    public static void DescendRecursionLevels(ref BigRational interv, ref BigRational delta, ref BigRational thresh, ref BigRational off, int recLevel) {
         for(; recLevel > 0; recLevel--) {
             BigRational residualDrift = CalcResidualDrift(interv, delta);
 
             off = CalcBoundedOffset(interv, delta, off);
             if(BigRational.Sign(delta) == BigRational.Sign(residualDrift)) off -= BigRational.Sign(delta) * residualDrift;
 
+            thresh = RecursiveCycleCalculator.CalcLengthOffset(thresh, delta);
             interv = BigRational.Abs(delta);
             delta = -BigRational.Sign(delta) * residualDrift;
         }

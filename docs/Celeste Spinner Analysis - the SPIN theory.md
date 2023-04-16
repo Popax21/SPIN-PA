@@ -1,3 +1,4 @@
+
 **Analysis, research and code by Popax21, with help from XMinty7 and others**
 
 *The name "SPIN theory" is derived from the fact that this theory can be visualized as a recursive set of sliding windows "spinning" / looping around in a residual number field*
@@ -81,7 +82,7 @@ $$ Solving for $i$ yields: $$
 \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert 
 $$
 
-(Note that these ranges are not perfectly accurate - there can be group cycles where two or no values of $i \in [0;n_g)$ will fulfill the condition (namely $i = 0 \land i = n_g-1$ and $i = n_g$). These are results of drifts which cross cycle boundaries, and these drift-affected solutions of the equation will not be considered when determining spinner's group)
+(Note that these ranges are not perfectly accurate - there can be group cycles where two or no values of $i \in [0;n_g)$ will fulfill the condition (namely $i = 0 \land i = n_g-1$ and $i = n_g$). These are the results of drifts which cross cycle boundaries, and these drift-affected solutions of the equation will not be considered when determining a spinner's group)
 
 **This means that spinner groups are not actually singluar discrete values, but *ranges* of values** (called the *check range*). We will continue to call $g = \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert \bmod n_g$ the *group* of the spinner, however keep in mind that in practice, the actual check results can differ from what we expect using the simple definition of spinner groups.
 

@@ -86,7 +86,7 @@ $$
 
 **This means that spinner groups are not actually singluar discrete values, but *ranges* of values** (called the *check range*). We will continue to call $g = \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert \bmod n_g$ the *group* of the spinner, however keep in mind that in practice, the actual check results can differ from what we expect using the simple definition of spinner groups.
 
-**Additionaly, this means that spinner check behavior is affected to two types of drift**: drifts of the spinner group $g$, called *group drifts*, and temporary anomalies of the length $L = \left \lceil {\mathit{thr} - (-\mathit{off}_B \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil$ of the check range, called *length drifts*.
+**Additionaly, this means that spinner check behavior is affected by two types of drift**: drifts of the spinner group $g$, called *group drifts*, and temporary anomalies of the length $L = \left \lceil {\mathit{thr} - (-\mathit{off}_B \bmod \lvert \mathit{dt} \rvert) \over \lvert \mathit{dt} \rvert} \right \rceil$ of the check range, called *length drifts*.
 
 From now on, we will call $\mathit{off}_B$ the *bounded offset* of the spinner. It will become useful later as $0 \leq \left \lvert \left \lceil {\mathit{off}_B \over \lvert \mathit{dt} \rvert} \right \rceil \right \rvert * \mathit{dt} - \mathit{off}_B < \lvert \mathit{dt} \rvert$ is true.
 

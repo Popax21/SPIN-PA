@@ -6,11 +6,13 @@ using System.Text;
 namespace SPINPA.Engine.CLI;
 
 public sealed class DTRangesCommand : CLICommand {
+    private readonly Option<float> startTimeActiveOpt;
     private readonly Option<bool> frameRangeOpt, startTAOpt, effDTOpt;
     private readonly Option<int> cycleDepthOpt;
     private readonly Option<bool> cycleDeltasOpt, cycleIntervalsOpt, cycleDriftsOpt, cycleLensOpt, cycleBaseLensOpt;
 
     public DTRangesCommand() : base("dt_ranges", "Prints information about the effective delta time ranges") {
+        Command.AddOption(startTimeActiveOpt = new Option<float>("--start-timeactive", description: "The TimeActive value of the first frame", getDefaultValue: () => 0));
         Command.AddOption(frameRangeOpt = new Option<bool>("--frame-range", description: "Print the frame index range of the DT range", getDefaultValue: () => true));
         Command.AddOption(startTAOpt = new Option<bool>("--start-ta", description: "Print the starting TimeActive value of the DT range", getDefaultValue: () => true));
         Command.AddOption(effDTOpt = new Option<bool>("--effective-dts", description: "Print the effective delta time values of the DT range", getDefaultValue: () => true));
@@ -36,7 +38,7 @@ public sealed class DTRangesCommand : CLICommand {
         bool cycleBaseLens = ctx.ParseResult.GetValueForOption(cycleBaseLensOpt);
 
         int idx = 0;
-        foreach(EffectiveDTRange range in EffectiveDTRange.EnumerateDTRanges()) {
+        foreach(EffectiveDTRange range in EffectiveDTRange.EnumerateDTRanges(ctx.ParseResult.GetValueForOption(startTimeActiveOpt))) {
             if(idx > 0) ctx.Console.WriteLine(string.Empty);
             ctx.Console.WriteLine($">>>> {idx++}: EXPONENT {range.TimeActiveExponent} <<<<");
 

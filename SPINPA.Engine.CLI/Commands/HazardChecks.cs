@@ -5,6 +5,7 @@ using System.CommandLine.Invocation;
 namespace SPINPA.Engine.CLI;
 
 public sealed class HazardChecksCommand : CLICommand {
+    private readonly Option<float> startTimeActiveOpt;
     private readonly Option<long> startFrameOpt, numFramesOpt;
     private readonly Option<float> checkIntvOpt;
 
@@ -16,6 +17,7 @@ public sealed class HazardChecksCommand : CLICommand {
     private readonly Argument<float> hazardOffArg;
 
     public HazardChecksCommand() : base("hazard_checks", "Prints the sequence of load checks performed by a certain hazard") {
+        Command.AddOption(startTimeActiveOpt = new Option<float>("--start-timeactive", description: "The TimeActive value of the first frame", getDefaultValue: () => 0));
         Command.AddOption(startFrameOpt = new Option<long>("--start-frame", description: "The starting frame of the sequence to print", getDefaultValue: () => 0));
         Command.AddOption(numFramesOpt = new Option<long>("--num-frames", description: "The number frame of the sequence to print", getDefaultValue: () => long.MaxValue));
         Command.AddOption(checkIntvOpt = new Option<float>("--check-interval", description: "The OnInterval check interval", getDefaultValue: () => Constants.HazardLoadInterval));
@@ -49,7 +51,7 @@ public sealed class HazardChecksCommand : CLICommand {
         highlightGroupDrifts |= highlightDrifts;
         highlightLengthDrifts |= highlightDrifts;
 
-        IntervalCheckPredictor pred = new IntervalCheckPredictor(hazardOff, checkIntv);
+        IntervalCheckPredictor pred = new IntervalCheckPredictor(hazardOff, checkIntv, ctx.ParseResult.GetValueForOption(startTimeActiveOpt));
 
         bool inGroupDriftHighlight = false, inLengthDriftHighlight = false;
         long lastTick = -1;

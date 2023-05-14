@@ -5,6 +5,7 @@ namespace SPINPA.Engine.CLI;
 
 public sealed class HazardInfoCommand : CLICommand {
     private readonly Option<float> checkIntvOpt;
+    private readonly Option<float> startTimeActiveOpt;
 
     private readonly Option<bool> recCycleInfoOpt;
     private readonly Option<bool> rawCheckInfoOpt;
@@ -15,6 +16,7 @@ public sealed class HazardInfoCommand : CLICommand {
 
     public HazardInfoCommand() : base("hazard_info", "Prints information about the load check cycles of a hazard with a given offset") {
         Command.AddOption(checkIntvOpt = new Option<float>("--check-interval", description: "The OnInterval check interval", getDefaultValue: () => Constants.HazardLoadInterval));
+        Command.AddOption(startTimeActiveOpt = new Option<float>("--start-timeactive", description: "The TimeActive value of the first frame", getDefaultValue: () => 0));
 
         Command.AddOption(recCycleInfoOpt = new Option<bool>("--cycle-info", description: "Whether to print information about the states of recursive cycles", getDefaultValue: () => true));
         Command.AddOption(rawCheckInfoOpt = new Option<bool>("--raw-check-info", description: "Whether to print information about raw check results", getDefaultValue: () => true));
@@ -30,7 +32,7 @@ public sealed class HazardInfoCommand : CLICommand {
         bool rawCheckInfo = ctx.ParseResult.GetValueForOption(rawCheckInfoOpt);
         bool rangeCheckInfo = ctx.ParseResult.GetValueForOption(rangeCheckInfoOpt);
 
-        IntervalCheckPredictor pred = new IntervalCheckPredictor(ctx.ParseResult.GetValueForArgument(hazardOffArg), ctx.ParseResult.GetValueForOption(checkIntvOpt));
+        IntervalCheckPredictor pred = new IntervalCheckPredictor(ctx.ParseResult.GetValueForArgument(hazardOffArg), ctx.ParseResult.GetValueForOption(checkIntvOpt), ctx.ParseResult.GetValueForOption(startTimeActiveOpt));
 
         void PrintCycleStates(IntervalCheckDTRangePredictor dtPred) {
             for(int i = 0; i < dtPred.RecursiveCycles.Length; i++) {

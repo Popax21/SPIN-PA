@@ -6,11 +6,11 @@ namespace SPINPA.Engine;
 public readonly record struct EffectiveDTRange(long StartFrame, long EndFrame, float StartTimeActive, int TimeActiveExponent, float EffectiveDT, BigRational TransitionDT) {
     public readonly long NumFrames = EndFrame - StartFrame;
 
-    public static IEnumerable<EffectiveDTRange> EnumerateDTRanges() {
+    public static IEnumerable<EffectiveDTRange> EnumerateDTRanges(float startTA = 0) {
         int dtExp = FloatUtils.GetExponent(Constants.DeltaTime), dtMant = FloatUtils.GetMantissa(Constants.DeltaTime);
 
         long startFrame = 0;
-        float timeActive = Constants.DeltaTime;
+        float timeActive = startTA + Constants.DeltaTime;
         while(true) {
             Assert.AssertTrue(FloatUtils.IsNormalized(timeActive));
             int taExp = FloatUtils.GetExponent(timeActive), taMant = FloatUtils.GetMantissa(timeActive);

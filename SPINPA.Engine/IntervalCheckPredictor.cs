@@ -15,8 +15,8 @@ public sealed class IntervalCheckPredictor {
     public readonly DTRange[] Ranges;
     private int curRangeIdx = 0;
 
-    public IntervalCheckPredictor(float off, float intv) : this(new BigRational(off), new BigRational(intv)) {}
-    public IntervalCheckPredictor(BigRational off, BigRational intv) {
+    public IntervalCheckPredictor(float off, float intv, float startTA = 0) : this(new BigRational(off), new BigRational(intv), startTA) {}
+    public IntervalCheckPredictor(BigRational off, BigRational intv, float startTA = 0) {
         Offset = off;
         Interval = intv;
 
@@ -46,7 +46,7 @@ public sealed class IntervalCheckPredictor {
 
         //Add effective DT ranges
         rOff += RecursiveCycleCalculator.CalcOffsetDrift(intv, new BigRational(Constants.DeltaTime), 1); //TimeActive is one frame offset from T in the SPIN doc
-        foreach(EffectiveDTRange effDtRange in EffectiveDTRange.EnumerateDTRanges()) {
+        foreach(EffectiveDTRange effDtRange in EffectiveDTRange.EnumerateDTRanges(startTA)) {
             if(!float.IsNaN(effDtRange.EffectiveDT)) AddRange(effDtRange.StartFrame, (effDtRange.EndFrame < long.MaxValue) ? (effDtRange.EndFrame-1) : long.MaxValue, new BigRational(effDtRange.EffectiveDT));
             if(!BigRational.IsNaN(effDtRange.TransitionDT)) AddRange(effDtRange.EndFrame-1, effDtRange.EndFrame, effDtRange.TransitionDT);
         }
